@@ -1,0 +1,38 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Test stack with PermissionsBoundary",
+    "Resources": {
+        "IAMRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "Path": "/",
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Principal": {
+							"AWS": {"Ref": "AWS::AccountId"}
+						},
+                        "Action": "sts:AssumeRole"
+                    }]
+                },
+                "Policies": [
+                   {
+                        "PolicyName": "AssumeRole1",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": {
+								"Effect": "Allow",
+								"Action": "sts:AssumeRole",
+								"Resource": {
+									"Fn::Sub": "arn:aws:iam::${AWS::AccountId}:role/AllowedRole"
+								}
+                            }
+                        }
+                    }
+                ],
+                "PermissionsBoundary": {"Fn::Sub": "arn:aws:iam::${AWS::AccountId}:policy/PermissionsBoundaryPolicy"}
+            }
+        }
+	}
+}

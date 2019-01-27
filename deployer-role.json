@@ -1,0 +1,106 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Deployer role stack",
+    "Parameters": {
+        "User": {
+            "Type": "String",
+            "Description": "A user who is allowed to switch to Deployer role"
+        }
+    },
+    "Resources": {
+        "PermissionsBoundary": {
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Properties": {
+                "ManagedPolicyName": "PermissionsBoundaryPolicy",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "AllowedRoles",
+                            "Effect": "Allow",
+                            "Action": "sts:AssumeRole",
+                            "Resource": "arn:aws:iam::*:role/AllowedRole"
+                        }
+                    ]
+                }
+            }
+        },
+        "DeployerRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": "Deployer",
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+								"AWS": {"Fn::Sub": "arn:aws:iam::${AWS::AccountId}:user/${User}"}
+							},
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "Policies": [
+                    {
+                        "PolicyName": "CloudformationMinimalPermissions",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Sid": "CloudformationMinimalPolicy",
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "cloudformation:*",
+                                        "s3:*",
+                                        "sns:*"
+                                    ],
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "PolicyName": "IAMLimitedPermissions",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+								{
+									"Sid": "RestrictedActions",
+									"Effect": "Allow",
+									"Action": [
+										"iam:AttachRolePolicy",
+										"iam:CreateRole",
+										"iam:DeleteRolePermissionsBoundary",
+										"iam:DeleteRolePolicy",
+										"iam:DetachRolePolicy",
+										"iam:PutRolePermissionsBoundary",
+										"iam:PutRolePolicy",
+										"iam:UpdateRole"
+									],
+									"Resource": "*",
+									"Condition": {
+										"StringEquals": {
+											"iam:PermissionsBoundary": {"Ref": "PermissionsBoundary"}
+										}
+									}
+								},
+								{
+									"Sid": "CommonActions",
+									"Effect": "Allow",
+									"Action": [
+										"iam:DeleteRole",
+										"iam:Get*",
+										"iam:List*",
+										"iam:PassRole"
+									],
+									"Resource": "*"
+								}
+							]
+						}
+                    }
+                ]
+            }
+        }
+    }
+}
